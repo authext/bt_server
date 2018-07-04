@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stddef.h>
 // FreeRTOS includes
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -20,6 +22,8 @@
 #include "esp_gatt_common_api.h"
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
+// My includes
+#include "sin_table.h"
 
 
 static const char *TAG = "GATT_SERVER";
@@ -212,6 +216,44 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 		}
     },
 };
+
+#define SAMPLES_LEN 128
+static int16_t samples[SAMPLES_LEN];
+
+static int16_t counter = 0;
+static int16_t a;
+
+void conjure_samples(void *_)
+{
+	for (;;)
+	{
+		const TickType_t start_ticks = xTaskGetTickCount();
+
+		if (counter % 100 == 0)
+		{
+			int r = rand();
+			if (r % 4 == 0)
+				a = 1;
+			else if (r % 4 == 1)
+				a = 2;
+			else if (r % 4 == 2)
+				a = 3;
+			else
+				a = 4;
+		}
+
+		for (int i = 0; i < SAMPLES_LEN; i++)
+			samples[i] = a * sin_table[counter++];
+
+		counter %= SIN_SIZE;
+
+		const TickType_t end_ticks = xTaskGetTickCount();
+		int ms = (end_ticks - start_ticks) * portTICK_PERIOD_MS;
+		if (ms < 16)
+			vTaskDelay((16 - ms) / portTICK_PERIOD_MS);
+	}
+}
+
 
 static void gap_event_handler(
 	esp_gap_ble_cb_event_t event,
@@ -494,4 +536,12 @@ void app_main()
 			"set local  MTU failed, error code = %x",
 			ret);
     }
+
+    xTaskCreate(
+    	conjure_samples,
+		"conjurer",
+		configMINIMAL_STACK_SIZE,
+		NULL,
+		configMAX_PRIORITIES - 1,
+		NULL);
 }
