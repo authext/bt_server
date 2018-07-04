@@ -547,7 +547,7 @@ void app_main()
     xTaskCreate(
     	conjure_samples,
 		"conjurer",
-		configMINIMAL_STACK_SIZE,
+		configMINIMAL_STACK_SIZE * 2,
 		NULL,
 		configMAX_PRIORITIES - 1,
 		NULL);
