@@ -49,6 +49,7 @@ typedef enum _gatt_index
 #define SCAN_RSP_CONFIG_FLAG        (1 << 1)
 
 static uint8_t adv_config_done       = 0;
+static uint16_t conn_id = 0;
 
 uint16_t handle_table[HRS_IDX_NB];
 
@@ -128,7 +129,7 @@ static void gatts_profile_event_handler(
 		esp_ble_gatts_cb_param_t *param);
 
 /* One gatt-based profile one app_id and one gatts_if, this array will store the gatts_if returned by ESP_GATTS_REG_EVT */
-static struct gatts_profile_inst heart_rate_profile_tab[PROFILE_NUM] =
+static struct gatts_profile_inst profile_tab[PROFILE_NUM] =
 {
     [PROFILE_APP_IDX] =
     {
@@ -144,8 +145,8 @@ static const uint16_t GATTS_CHAR_UUID_RMS = 0xFF01;
 static const uint16_t PRIMARY_SERVICE_UUID = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t CHAR_DECLARATION_UUID = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint16_t CHAR_CLIENT_CONFIG_UUID = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
-static const uint8_t CHAR_PROP_READ = ESP_GATT_CHAR_PROP_BIT_READ;
-static const uint16_t NOTIFICATIONS_ENABLED = 0x0;
+static const uint8_t CHAR_PROP_RN = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
+static const uint16_t NOTIFICATIONS_ENABLED = 0x1;
 static uint8_t rms_value = 0;
 
 
@@ -180,7 +181,7 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 			ESP_GATT_PERM_READ,
 			sizeof(uint8_t),
 			sizeof(uint8_t),
-			(uint8_t *)&CHAR_PROP_READ
+			(uint8_t *)&CHAR_PROP_RN
 		}
     },
 
@@ -244,6 +245,18 @@ void conjure_samples(void *_)
 
 			rms_value = a;
 			printf("I have rms of %d\n", a);
+
+			esp_err_t ret = esp_ble_gatts_send_indicate(
+				profile_tab[PROFILE_APP_IDX].gatts_if,
+				conn_id,
+				0x2a,
+				sizeof(uint8_t),
+				&rms_value,
+				false);
+			if (ret != ESP_OK)
+			{
+				ESP_LOGE(TAG, "Cannot notify");
+			}
 		}
 
 		for (int i = 0; i < SAMPLES_LEN; i++)
@@ -356,6 +369,7 @@ static void gatts_profile_event_handler(
 		break;
 
 	case ESP_GATTS_CONNECT_EVT:
+		conn_id = param->connect.conn_id;
 		ESP_LOGI(
 			TAG,
 			"ESP_GATTS_CONNECT_EVT, conn_id = %d",
@@ -433,7 +447,7 @@ static void gatts_event_handler(
     {
     	if (param->reg.status == ESP_GATT_OK)
     	{
-            heart_rate_profile_tab[PROFILE_APP_IDX].gatts_if = gatts_if;
+            profile_tab[PROFILE_APP_IDX].gatts_if = gatts_if;
     	}
     	else
 		{
@@ -450,10 +464,10 @@ static void gatts_event_handler(
 	{
 		/* ESP_GATT_IF_NONE, not specify a certain gatt_if, need to call every profile cb function */
 		const bool is_none = gatts_if == ESP_GATT_IF_NONE;
-		const bool is_this = gatts_if == heart_rate_profile_tab[idx].gatts_if;
+		const bool is_this = gatts_if == profile_tab[idx].gatts_if;
 
-		if ((is_none || is_this) && heart_rate_profile_tab[idx].gatts_cb)
-			heart_rate_profile_tab[idx].gatts_cb(event, gatts_if, param);
+		if ((is_none || is_this) && profile_tab[idx].gatts_cb)
+			profile_tab[idx].gatts_cb(event, gatts_if, param);
 	}
 }
 
@@ -547,7 +561,7 @@ void app_main()
     xTaskCreate(
     	conjure_samples,
 		"conjurer",
-		configMINIMAL_STACK_SIZE * 2,
+		configMINIMAL_STACK_SIZE * 10,
 		NULL,
 		configMAX_PRIORITIES - 1,
 		NULL);
