@@ -146,7 +146,7 @@ static const uint16_t CHAR_DECLARATION_UUID = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint16_t CHAR_CLIENT_CONFIG_UUID = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
 static const uint8_t CHAR_PROP_READ = ESP_GATT_CHAR_PROP_BIT_READ;
 static const uint16_t NOTIFICATIONS_ENABLED = 0x0;
-static uint8_t char_value = 0xAB;
+static uint8_t rms_value = 0;
 
 
 /* Full Database Description - Used to add attributes into the database */
@@ -194,9 +194,9 @@ static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
 			ESP_UUID_LEN_16,
 			(uint8_t *)&GATTS_CHAR_UUID_RMS,
 			ESP_GATT_PERM_READ,
-			sizeof(char_value),
-			sizeof(char_value),
-			(uint8_t *)&char_value
+			sizeof(rms_value),
+			sizeof(rms_value),
+			(uint8_t *)&rms_value
 		}
     },
 
@@ -222,6 +222,7 @@ static int16_t samples[SAMPLES_LEN];
 
 static int16_t counter = 0;
 static int16_t a;
+static uint32_t packet_counter = 0;
 
 void conjure_samples(void *_)
 {
@@ -229,7 +230,7 @@ void conjure_samples(void *_)
 	{
 		const TickType_t start_ticks = xTaskGetTickCount();
 
-		if (counter % 100 == 0)
+		if (packet_counter % 200 == 0)
 		{
 			int r = rand();
 			if (r % 4 == 0)
@@ -240,12 +241,18 @@ void conjure_samples(void *_)
 				a = 3;
 			else
 				a = 4;
+
+			rms_value = a;
+			printf("I have rms of %d\n", a);
 		}
 
 		for (int i = 0; i < SAMPLES_LEN; i++)
 			samples[i] = a * sin_table[counter++];
 
-		counter %= SIN_SIZE;
+		if (counter >= SIN_SIZE - 1)
+			counter = 0;
+
+		packet_counter++;
 
 		const TickType_t end_ticks = xTaskGetTickCount();
 		int ms = (end_ticks - start_ticks) * portTICK_PERIOD_MS;
