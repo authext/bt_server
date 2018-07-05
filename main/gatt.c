@@ -262,6 +262,7 @@ void gatts_profile_event_handler(
 
 	case ESP_GATTS_MTU_EVT:
 		ESP_LOGI(TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
+		ble_connected = true;
 		break;
 
 	case ESP_GATTS_CONF_EVT:
@@ -294,7 +295,6 @@ void gatts_profile_event_handler(
 		//start sent the update connection parameters to the peer device.
 		esp_ble_gap_update_conn_params(&conn_params);
 		esp_ble_gap_stop_advertising();
-		ble_connected = true;
 		break;
 
 	case ESP_GATTS_DISCONNECT_EVT:
