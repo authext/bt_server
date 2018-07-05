@@ -53,6 +53,7 @@ typedef struct
 
 extern gatts_profile_inst profile_tab[PROFILE_NUM];
 
+extern bool ble_connected;
 extern uint8_t rms_value;
 extern uint16_t conn_id;
 

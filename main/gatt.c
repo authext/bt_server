@@ -13,6 +13,7 @@ typedef enum _gatt_index
 } gatt_index;
 
 
+bool ble_connected = 0;
 uint8_t rms_value = 0;
 uint16_t conn_id = 0;
 
@@ -292,9 +293,11 @@ void gatts_profile_event_handler(
 		conn_params.timeout = 10;    // 10ms
 		//start sent the update connection parameters to the peer device.
 		esp_ble_gap_update_conn_params(&conn_params);
+		ble_connected = true;
 		break;
 
 	case ESP_GATTS_DISCONNECT_EVT:
+		ble_connected = false;
 		ESP_LOGI(
 			TAG,
 			"ESP_GATTS_DISCONNECT_EVT, reason = %d",

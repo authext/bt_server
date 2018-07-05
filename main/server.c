@@ -55,16 +55,19 @@ void conjure_samples(void *_)
 			rms_value = a;
 			printf("I have rms of %d\n", a);
 
-			esp_err_t ret = esp_ble_gatts_send_indicate(
-				profile_tab[PROFILE_APP_IDX].gatts_if,
-				conn_id,
-				0x2a,
-				sizeof(uint8_t),
-				&rms_value,
-				false);
-			if (ret != ESP_OK)
+			if (ble_connected)
 			{
-				ESP_LOGE(TAG, "Cannot notify");
+				esp_err_t ret = esp_ble_gatts_send_indicate(
+					profile_tab[PROFILE_APP_IDX].gatts_if,
+					conn_id,
+					0x2a,
+					sizeof(uint8_t),
+					&rms_value,
+					false);
+				if (ret != ESP_OK)
+				{
+					ESP_LOGE(TAG, "Cannot notify");
+				}
 			}
 		}
 
