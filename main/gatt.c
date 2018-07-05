@@ -293,6 +293,7 @@ void gatts_profile_event_handler(
 		conn_params.timeout = 10;    // 10ms
 		//start sent the update connection parameters to the peer device.
 		esp_ble_gap_update_conn_params(&conn_params);
+		esp_ble_gap_stop_advertising();
 		ble_connected = true;
 		break;
 
