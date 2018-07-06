@@ -22,9 +22,10 @@
 #include "esp_gatt_common_api.h"
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
+
+#include "gatts.h"
 // My includes
 #include "sin_table.h"
-#include "gatt.h"
 #include "tag.h"
 
 #define SAMPLES_LEN 128
