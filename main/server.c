@@ -55,7 +55,7 @@ void conjure_samples(void *_)
 			rms_value = a;
 			printf("I have rms of %d\n", a);
 
-			if (ble_connected)
+			if (ble_connected && rms_value > 2)
 			{
 				esp_err_t ret = esp_ble_gatts_send_indicate(
 					profile_tab[PROFILE_APP_IDX].gatts_if,
