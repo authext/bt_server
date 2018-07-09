@@ -1,7 +1,8 @@
 #include "gatts.h"
 
 #include <stdlib.h>
-#include "tag.h"
+
+#include "tags.h"
 
 typedef enum _gatt_index
 {
@@ -201,21 +202,21 @@ void gap_event_handler(
         case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
             /* advertising start complete event to indicate advertising start successfully or failed */
             if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS)
-                ESP_LOGE(TAG, "advertising start failed");
+                ESP_LOGE(GATTC_TAG, "advertising start failed");
             else
-                ESP_LOGI(TAG, "advertising start successfully");
+                ESP_LOGI(GATTC_TAG, "advertising start successfully");
             break;
 
         case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
             if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS)
-                ESP_LOGE(TAG, "Advertising stop failed");
+                ESP_LOGE(GATTC_TAG, "Advertising stop failed");
             else
-                ESP_LOGI(TAG, "Stop adv successfully\n");
+                ESP_LOGI(GATTC_TAG, "Stop adv successfully\n");
             break;
 
         case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
             ESP_LOGI(
-            	TAG,
+            	GATTC_TAG,
 				"update connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d",
                 param->update_conn_params.status,
                 param->update_conn_params.min_int,
@@ -241,47 +242,47 @@ void gatts_profile_event_handler(
     {
     case ESP_GATTS_REG_EVT:
 		if ((ret = esp_ble_gap_set_device_name(SAMPLE_DEVICE_NAME)) != ESP_OK)
-			ESP_LOGE(TAG, "set device name failed, error code = %x", ret);
+			ESP_LOGE(GATTC_TAG, "set device name failed, error code = %x", ret);
 
 		//config adv data
 		if ((ret = esp_ble_gap_config_adv_data(&adv_data)) != ESP_OK)
-			ESP_LOGE(TAG, "config adv data failed, error code = %x", ret);
+			ESP_LOGE(GATTC_TAG, "config adv data failed, error code = %x", ret);
 		adv_config_done |= ADV_CONFIG_FLAG;
 
 		//config scan response data
 		if ((ret = esp_ble_gap_config_adv_data(&scan_rsp_data)) != ESP_OK)
-			ESP_LOGE(TAG, "config scan response data failed, error code = %x", ret);
+			ESP_LOGE(GATTC_TAG, "config scan response data failed, error code = %x", ret);
 		adv_config_done |= SCAN_RSP_CONFIG_FLAG;
 
 		if ((ret = esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, HRS_IDX_NB, SVC_INST_ID)) != ESP_OK)
-			ESP_LOGE(TAG, "create attr table failed, error code = %x", ret);
+			ESP_LOGE(GATTC_TAG, "create attr table failed, error code = %x", ret);
 		break;
 
 	case ESP_GATTS_READ_EVT:
-		ESP_LOGI(TAG, "ESP_GATTS_READ_EVT");
+		ESP_LOGI(GATTC_TAG, "ESP_GATTS_READ_EVT");
 		break;
 
 	case ESP_GATTS_MTU_EVT:
-		ESP_LOGI(TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
+		ESP_LOGI(GATTC_TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
 		ble_connected = true;
 		break;
 
 	case ESP_GATTS_CONF_EVT:
-		ESP_LOGI(TAG, "ESP_GATTS_CONF_EVT, status = %d", param->conf.status);
+		ESP_LOGI(GATTC_TAG, "ESP_GATTS_CONF_EVT, status = %d", param->conf.status);
 		break;
 
 	case ESP_GATTS_START_EVT:
-		ESP_LOGI(TAG, "SERVICE_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
+		ESP_LOGI(GATTC_TAG, "SERVICE_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
 		break;
 
 	case ESP_GATTS_CONNECT_EVT:
 		conn_id = param->connect.conn_id;
 		ESP_LOGI(
-			TAG,
+			GATTC_TAG,
 			"ESP_GATTS_CONNECT_EVT, conn_id = %d",
 			param->connect.conn_id);
 		esp_log_buffer_hex(
-			TAG,
+			GATTC_TAG,
 			param->connect.remote_bda,
 			6);
 		esp_ble_conn_update_params_t conn_params = {0};
@@ -301,7 +302,7 @@ void gatts_profile_event_handler(
 	case ESP_GATTS_DISCONNECT_EVT:
 		ble_connected = false;
 		ESP_LOGI(
-			TAG,
+			GATTC_TAG,
 			"ESP_GATTS_DISCONNECT_EVT, reason = %d",
 			param->disconnect.reason);
 		esp_ble_gap_start_advertising(&adv_params);
@@ -312,14 +313,14 @@ void gatts_profile_event_handler(
 		if (param->add_attr_tab.status != ESP_GATT_OK)
 		{
 			ESP_LOGE(
-				TAG,
+				GATTC_TAG,
 				"create attribute table failed, error code=0x%x",
 				param->add_attr_tab.status);
 		}
 		else if (param->add_attr_tab.num_handle != HRS_IDX_NB)
 		{
 			ESP_LOGE(
-				TAG,
+				GATTC_TAG,
 				"create attribute table abnormally, num_handle (%d) doesn't equal to HRS_IDX_NB(%d)",
 				param->add_attr_tab.num_handle,
 				HRS_IDX_NB);
@@ -327,7 +328,7 @@ void gatts_profile_event_handler(
 		else
 		{
 			ESP_LOGI(
-				TAG,
+				GATTC_TAG,
 				"create attribute table successfully, the number handle = %d\n",
 				param->add_attr_tab.num_handle);
 			memcpy(
@@ -360,7 +361,7 @@ void gatts_event_handler(
     	else
 		{
 			ESP_LOGE(
-				TAG,
+				GATTC_TAG,
 				"reg app failed, app_id %04x, status %d",
 				param->reg.app_id,
 				param->reg.status);

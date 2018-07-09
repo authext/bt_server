@@ -26,7 +26,9 @@
 #include "gatts.h"
 // My includes
 #include "sin_table.h"
-#include "tag.h"
+#include "tags.h"
+#include "a2dp_core.h"
+#include "a2dp_cb.h"
 
 #define SAMPLES_LEN 128
 static int16_t samples[SAMPLES_LEN];
@@ -67,7 +69,7 @@ void conjure_samples(void *_)
 					false);
 				if (ret != ESP_OK)
 				{
-					ESP_LOGE(TAG, "Cannot notify");
+					ESP_LOGE(GATTC_TAG, "Cannot notify");
 				}
 			}
 		}
@@ -103,7 +105,7 @@ void app_main()
     if ((ret = esp_bt_controller_init(&bt_cfg)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	GATTC_TAG,
 			"%s enable controller failed: %s",
 			__func__,
 			esp_err_to_name(ret));
@@ -113,7 +115,7 @@ void app_main()
     if ((ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	GATTC_TAG,
 			"%s enable controller failed: %s",
 			__func__,
 			esp_err_to_name(ret));
@@ -123,7 +125,7 @@ void app_main()
     if ((ret = esp_bluedroid_init()) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	GATTC_TAG,
 			"%s init bluetooth failed: %s",
 			__func__,
 			esp_err_to_name(ret));
@@ -133,17 +135,25 @@ void app_main()
     if ((ret = esp_bluedroid_enable()) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	GATTC_TAG,
 			"%s enable bluetooth failed: %s",
 			__func__,
 			esp_err_to_name(ret));
         return;
     }
 
+    bt_app_task_start_up();
+    bt_app_work_dispatch(
+    	bt_av_hdl_stack_evt,
+		BT_APP_EVT_STACK_UP,
+		NULL,
+		0,
+		NULL);
+
     if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	GATTC_TAG,
 			"gatts register error, error code = %x",
 			ret);
         return;
@@ -152,7 +162,7 @@ void app_main()
     if ((ret = esp_ble_gap_register_callback(gap_event_handler)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	GATTC_TAG,
 			"gap register error, error code = %x",
 			ret);
         return;
@@ -161,7 +171,7 @@ void app_main()
     if ((ret = esp_ble_gatts_app_register(ESP_APP_ID)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	GATTC_TAG,
 			"gatts app register error, error code = %x",
 			ret);
         return;
@@ -170,7 +180,7 @@ void app_main()
     if ((ret = esp_ble_gatt_set_local_mtu(500)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	GATTC_TAG,
 			"set local  MTU failed, error code = %x",
 			ret);
     }
