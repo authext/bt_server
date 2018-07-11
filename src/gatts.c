@@ -1,5 +1,4 @@
 #include "gatts.h"
-
 #include <stdlib.h>
 #include "tags.h"
 

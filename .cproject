@@ -28,6 +28,8 @@
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\esp-idf\components\bt\bluedroid\api\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\esp-idf\components\esp32\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\server\build\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\server\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\a2dp_core\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1064962353" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -41,6 +43,8 @@
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\esp-idf\components\bt\bluedroid\api\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\esp-idf\components\esp32\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\server\build\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\server\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\a2dp_core\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.cygwin.1204166585" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input.cygwin"/>
 							</tool>
@@ -53,6 +57,8 @@
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\esp-idf\components\bt\bluedroid\api\include\api&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\esp-idf\components\esp32\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\server\build\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\server\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\Users\avpavlovic\Downloads\msys32\usr\src\a2dp_core\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin.1757577339" superClass="cdt.managedbuild.tool.gnu.c.compiler.input.cygwin"/>
 							</tool>
