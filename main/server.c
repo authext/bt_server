@@ -22,28 +22,29 @@
 #include "esp_gatt_common_api.h"
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
-
-#include "gatts.h"
 // My includes
-#include "sin_table.h"
-#include "tag.h"
+#include "tags.h"
+#include "gatts.h"
 
-#define SAMPLES_LEN 128
-static int16_t samples[SAMPLES_LEN];
 
-static int16_t counter = 0;
-static int16_t a;
-static uint32_t packet_counter = 0;
-
-void conjure_samples(void *_)
+void conjure_rms(void *_)
 {
+	uint32_t counter = 0;
+
 	for (;;)
 	{
+		if (!ble_connected)
+		{
+			vTaskDelay(10 / portTICK_PERIOD_MS);
+			continue;
+		}
+
 		const TickType_t start_ticks = xTaskGetTickCount();
 
-		if (packet_counter % 200 == 0)
+		if (counter % 300 == 0)
 		{
 			int r = rand();
+			int16_t a;
 			if (r % 4 == 0)
 				a = 1;
 			else if (r % 4 == 1)
@@ -56,7 +57,7 @@ void conjure_samples(void *_)
 			rms_value = a;
 			printf("I have rms of %d\n", a);
 
-			if (ble_connected && rms_value > 2)
+			if (rms_value > 2)
 			{
 				esp_err_t ret = esp_ble_gatts_send_indicate(
 					profile_tab[PROFILE_APP_IDX].gatts_if,
@@ -66,19 +67,11 @@ void conjure_samples(void *_)
 					&rms_value,
 					false);
 				if (ret != ESP_OK)
-				{
-					ESP_LOGE(TAG, "Cannot notify");
-				}
+					ESP_LOGE(SERVER_TAG, "Cannot notify");
 			}
 		}
 
-		for (int i = 0; i < SAMPLES_LEN; i++)
-			samples[i] = a * sin_table[counter++];
-
-		if (counter >= SIN_SIZE - 1)
-			counter = 0;
-
-		packet_counter++;
+		counter++;
 
 		const TickType_t end_ticks = xTaskGetTickCount();
 		int ms = (end_ticks - start_ticks) * portTICK_PERIOD_MS;
@@ -103,7 +96,7 @@ void app_main()
     if ((ret = esp_bt_controller_init(&bt_cfg)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	SERVER_TAG,
 			"%s enable controller failed: %s",
 			__func__,
 			esp_err_to_name(ret));
@@ -113,7 +106,7 @@ void app_main()
     if ((ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	SERVER_TAG,
 			"%s enable controller failed: %s",
 			__func__,
 			esp_err_to_name(ret));
@@ -123,7 +116,7 @@ void app_main()
     if ((ret = esp_bluedroid_init()) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	SERVER_TAG,
 			"%s init bluetooth failed: %s",
 			__func__,
 			esp_err_to_name(ret));
@@ -133,7 +126,7 @@ void app_main()
     if ((ret = esp_bluedroid_enable()) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	SERVER_TAG,
 			"%s enable bluetooth failed: %s",
 			__func__,
 			esp_err_to_name(ret));
@@ -143,7 +136,7 @@ void app_main()
     if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	SERVER_TAG,
 			"gatts register error, error code = %x",
 			ret);
         return;
@@ -152,7 +145,7 @@ void app_main()
     if ((ret = esp_ble_gap_register_callback(gap_event_handler)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	SERVER_TAG,
 			"gap register error, error code = %x",
 			ret);
         return;
@@ -161,7 +154,7 @@ void app_main()
     if ((ret = esp_ble_gatts_app_register(ESP_APP_ID)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	SERVER_TAG,
 			"gatts app register error, error code = %x",
 			ret);
         return;
@@ -170,13 +163,13 @@ void app_main()
     if ((ret = esp_ble_gatt_set_local_mtu(500)) != ESP_OK)
     {
         ESP_LOGE(
-        	TAG,
+        	SERVER_TAG,
 			"set local  MTU failed, error code = %x",
 			ret);
     }
 
     xTaskCreate(
-    	conjure_samples,
+    	conjure_rms,
 		"conjurer",
 		configMINIMAL_STACK_SIZE * 10,
 		NULL,
