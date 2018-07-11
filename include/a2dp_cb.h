@@ -1,33 +1,38 @@
-/*
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
+#ifndef A2DP_CB_H
+#define A2DP_CB_H
 
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
-#ifndef __BT_APP_AV_H__
-#define __BT_APP_AV_H__
-
-#include <stdint.h>
+// C includes
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+// Unix includes
+#include <unistd.h>
+// FreeRTOS includes
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/timers.h"
+// ESP System includes
+#include "esp_system.h"
+// Logging includes
+#include "esp_log.h"
+// Bluetooth includes
+#include "esp_bt.h"
+#include "esp_bt_main.h"
+#include "esp_bt_device.h"
+#include "esp_gap_bt_api.h"
 #include "esp_a2dp_api.h"
 #include "esp_avrc_api.h"
+// My includes
+#include "a2dp_core.h"
 
-#define BT_AV_TAG               "BT_AV"
 
-/**
- * @brief     callback function for A2DP sink
- */
-void bt_app_a2d_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param);
+typedef enum
+{
+    A2D_CB_EVENT_STACK_UP = 0,
+} a2dp_cb_event_t;
 
-/**
- * @brief     callback function for A2DP sink audio data stream
- */
-void bt_app_a2d_data_cb(const uint8_t *data, uint32_t len);
+/// handler for bluetooth stack enabled events
+void a2d_cb_handle_stack_event(uint16_t event, void *p_param);
 
-/**
- * @brief     callback function for AVRCP controller
- */
-void bt_app_rc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param);
 
-#endif /* __BT_APP_AV_H__*/
+#endif

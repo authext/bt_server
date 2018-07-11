@@ -25,6 +25,8 @@
 // My includes
 #include "tags.h"
 #include "gatts.h"
+#include "a2dp_core.h"
+#include "a2dp_cb.h"
 
 
 void conjure_rms(void *_)
@@ -33,31 +35,14 @@ void conjure_rms(void *_)
 
 	for (;;)
 	{
-		if (!ble_connected)
-		{
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-			continue;
-		}
-
 		const TickType_t start_ticks = xTaskGetTickCount();
 
 		if (counter % 300 == 0)
 		{
-			int r = rand();
-			int16_t a;
-			if (r % 4 == 0)
-				a = 1;
-			else if (r % 4 == 1)
-				a = 2;
-			else if (r % 4 == 2)
-				a = 3;
-			else
-				a = 4;
+			rms_value = rand() % 4 + 1;
+			printf("I have rms of %d\n", rms_value);
 
-			rms_value = a;
-			printf("I have rms of %d\n", a);
-
-			if (rms_value > 2)
+			if (rms_value > 2 && ble_connected)
 			{
 				esp_err_t ret = esp_ble_gatts_send_indicate(
 					profile_tab[PROFILE_APP_IDX].gatts_if,
@@ -132,6 +117,13 @@ void app_main()
 			esp_err_to_name(ret));
         return;
     }
+
+    a2dp_core_start();
+    a2dp_core_dispatch(
+    	a2d_cb_handle_stack_event,
+		A2D_CB_EVENT_STACK_UP,
+		NULL,
+		0);
 
     if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
     {
