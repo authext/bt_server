@@ -34,7 +34,6 @@
 static int16_t samples[SAMPLES_LEN];
 
 static int16_t counter = 0;
-static int16_t a;
 static uint32_t packet_counter = 0;
 
 void conjure_samples(void *_)
@@ -45,18 +44,8 @@ void conjure_samples(void *_)
 
 		if (packet_counter % 200 == 0)
 		{
-			int r = rand();
-			if (r % 4 == 0)
-				a = 1;
-			else if (r % 4 == 1)
-				a = 2;
-			else if (r % 4 == 2)
-				a = 3;
-			else
-				a = 4;
-
-			rms_value = a;
-			printf("I have rms of %d\n", a);
+			// Make some random "RMS"
+			rms_value = rand() % 4 + 1;
 
 			if (ble_connected && rms_value > 2)
 			{
@@ -67,7 +56,11 @@ void conjure_samples(void *_)
 					sizeof(uint8_t),
 					&rms_value,
 					false);
-				if (ret != ESP_OK)
+				if (ret == ESP_OK)
+				{
+					printf("I have rms of %d\n", rms_value);
+				}
+				else
 				{
 					ESP_LOGE(GATTC_TAG, "Cannot notify");
 				}
@@ -75,7 +68,7 @@ void conjure_samples(void *_)
 		}
 
 		for (int i = 0; i < SAMPLES_LEN; i++)
-			samples[i] = a * sin_table[counter++];
+			samples[i] = rms_value * sin_table[counter++];
 
 		if (counter >= SIN_SIZE - 1)
 			counter = 0;
