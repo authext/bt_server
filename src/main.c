@@ -125,7 +125,7 @@ void app_main()
 		NULL,
 		0);
 
-    if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
+    /*if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
     {
         ESP_LOGE(
         	SERVER_TAG,
@@ -166,5 +166,5 @@ void app_main()
 		configMINIMAL_STACK_SIZE * 10,
 		NULL,
 		configMAX_PRIORITIES - 1,
-		NULL);
+		NULL);*/
 }

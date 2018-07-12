@@ -47,6 +47,7 @@ static void a2dp_cb_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
     case ESP_A2D_CONNECTION_STATE_EVT:
     case ESP_A2D_AUDIO_STATE_EVT:
     case ESP_A2D_AUDIO_CFG_EVT:
+    case ESP_A2D_MEDIA_CTRL_ACK_EVT:
         a2dp_core_dispatch(
         	bt_av_hdl_a2d_evt,
 			event,
@@ -62,10 +63,23 @@ static void a2dp_cb_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 
 static int32_t a2dp_cb_data_cb(uint8_t *data, int32_t len)
 {
-	memset(data, 0, len);
+	static int32_t sum_len = 0;
+	static uint16_t counter = 0;
+
+	if (len <= 0 || data == NULL)
+		return 0;
+
+	for (int i = 0; i < len / 2; i++)
+	{
+		data[2 * i + 0] = counter & 0xFF;
+		data[2 * i + 1] = (counter >> 8) & 0xFF;
+		counter++;
+	}
+
+	sum_len += len;
 
     if (++m_pkt_cnt % 100 == 0)
-        ESP_LOGI(A2DP_CB_TAG, "SENT PACKETS %u", m_pkt_cnt);
+        ESP_LOGI(A2DP_CB_TAG, "SENT PACKETS %u (%dB)", m_pkt_cnt, sum_len);
 
     return len;
 }
@@ -108,6 +122,8 @@ static void bt_av_hdl_a2d_evt(uint16_t event, void *p_param)
         uint8_t *bda = a2d->conn_stat.remote_bda;
         ESP_LOGI(A2DP_CB_TAG, "A2DP connection state: %s, [%02x:%02x:%02x:%02x:%02x:%02x]",
              m_a2d_conn_state_str[a2d->conn_stat.state], bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
+        if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED)
+        	esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
         break;
     }
     case ESP_A2D_AUDIO_STATE_EVT: {
@@ -119,7 +135,13 @@ static void bt_av_hdl_a2d_evt(uint16_t event, void *p_param)
         }
         break;
     }
+
+    case ESP_A2D_MEDIA_CTRL_ACK_EVT:
+    	ESP_LOGI(A2DP_CB_TAG, "A2DP media event ack");
+    	break;
+
     case ESP_A2D_AUDIO_CFG_EVT:
+    	ESP_LOGI(A2DP_CB_TAG, "audio cfg event");
     	break;
 
     default:
@@ -193,6 +215,7 @@ void a2d_cb_handle_stack_event(uint16_t event, void *p_param)
     {
     case A2D_CB_EVENT_STACK_UP:
     	ESP_LOGI(A2DP_CB_TAG, "Setting up A2DP");
+    	esp_bt_dev_set_device_name("SERVER");
         /* initialize A2DP sink */
         if ((ret = esp_a2d_register_callback(a2dp_cb_cb)) != ESP_OK)
         {
@@ -212,7 +235,7 @@ void a2d_cb_handle_stack_event(uint16_t event, void *p_param)
         	return;
         }
 
-        if ((ret = esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE)) != ESP_OK)
+        if ((ret = esp_bt_gap_set_scan_mode(ESP_BT_SCAN_MODE_CONNECTABLE_DISCOVERABLE)) != ESP_OK)
         {
         	ESP_LOGE(A2DP_CB_TAG, "Cannot set scan mode %d", ret);
         	return;
