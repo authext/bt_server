@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <time.h>
 // FreeRTOS includes
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -39,7 +40,7 @@ void conjure_rms(void *_)
 
 		if (counter % 300 == 0)
 		{
-			rms_value = rand() % 4 + 1;
+			rms_value = rand() % 10 + 1;
 			printf("I have rms of %d\n", rms_value);
 
 			if (rms_value > 2 && ble_connected)
@@ -76,6 +77,8 @@ void app_main()
         ESP_ERROR_CHECK(nvs_flash_erase());
         ESP_ERROR_CHECK(nvs_flash_init());
     }
+
+    srand(time(NULL));
 
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     if ((ret = esp_bt_controller_init(&bt_cfg)) != ESP_OK)
@@ -125,7 +128,7 @@ void app_main()
 		NULL,
 		0);
 
-    /*if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
+    if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
     {
         ESP_LOGE(
         	SERVER_TAG,
@@ -166,5 +169,5 @@ void app_main()
 		configMINIMAL_STACK_SIZE * 10,
 		NULL,
 		configMAX_PRIORITIES - 1,
-		NULL);*/
+		NULL);
 }
