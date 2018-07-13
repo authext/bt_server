@@ -63,23 +63,17 @@ static void a2dp_cb_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 
 static int32_t a2dp_cb_data_cb(uint8_t *data, int32_t len)
 {
-	static int32_t sum_len = 0;
-	static uint16_t counter = 0;
+	static uint32_t sum_len = 0;
 
 	if (len <= 0 || data == NULL)
 		return 0;
 
-	for (int i = 0; i < len / 2; i++)
-	{
-		data[2 * i + 0] = counter & 0xFF;
-		data[2 * i + 1] = (counter >> 8) & 0xFF;
-		counter++;
-	}
+	memset(data, rand(), len);
 
 	sum_len += len;
 
-    if (++m_pkt_cnt % 100 == 0)
-        ESP_LOGI(A2DP_CB_TAG, "SENT PACKETS %u (%dB)", m_pkt_cnt, sum_len);
+    if (++m_pkt_cnt % 256 == 0)
+        ESP_LOGI(A2DP_CB_TAG, "SENT PACKETS 0x%08x (0x%08x B)", m_pkt_cnt, sum_len);
 
     return len;
 }
