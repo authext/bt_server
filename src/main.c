@@ -120,7 +120,7 @@ void app_main()
 
     a2dp_core_start();
     a2dp_core_dispatch(
-    	a2d_cb_handle_stack_event,
+    	a2dp_cb_handle_stack_event,
 		A2D_CB_EVENT_STACK_UP,
 		NULL,
 		0);
