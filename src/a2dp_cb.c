@@ -1,55 +1,55 @@
+// C includes
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+// Logging includes
 #include "esp_log.h"
-
-#include "a2dp_core.h"
-#include "a2dp_cb.h"
+// FreeRTOS includes
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+// Bluetooth includes
 #include "esp_bt_main.h"
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
 #include "esp_a2dp_api.h"
 #include "esp_avrc_api.h"
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
+// My includes
+#include "a2dp_core.h"
+#include "a2dp_cb.h"
 #include "tags.h"
 
-/* a2dp event handler */
-static void bt_av_hdl_a2d_evt(uint16_t event, void *p_param);
-/* avrc event handler */
-static void bt_av_hdl_avrc_evt(uint16_t event, void *p_param);
+
+static void a2dp_cb_handle_a2dp_event(uint16_t event, void *param);
 
 static uint32_t m_pkt_cnt = 0;
-static esp_a2d_audio_state_t m_audio_state = ESP_A2D_AUDIO_STATE_STOPPED;
-static const char *m_a2d_conn_state_str[] =
+static esp_bd_addr_t peer_bda = { };
+
+static const char * const conn_state_str[] =
 {
-	"Disconnected",
-	"Connecting",
-	"Connected",
-	"Disconnecting"
+	[ESP_A2D_CONNECTION_STATE_DISCONNECTED] = "Disconnected",
+	[ESP_A2D_CONNECTION_STATE_CONNECTING] = "Connecting",
+	[ESP_A2D_CONNECTION_STATE_CONNECTED] = "Connected",
+	[ESP_A2D_CONNECTION_STATE_DISCONNECTING] = "Disconnecting",
 };
 
-static const char *m_a2d_audio_state_str[] =
+static const char * const audio_state_str[] =
 {
-	"Suspended",
-	"Stopped",
-	"Started"
+	[ESP_A2D_AUDIO_STATE_REMOTE_SUSPEND] = "Suspended",
+	[ESP_A2D_AUDIO_STATE_STOPPED] = "Stopped",
+	[ESP_A2D_AUDIO_STATE_STARTED] = "Started"
 };
 
-/* callback for A2DP sink */
+
 static void a2dp_cb_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 {
     switch (event)
     {
     case ESP_A2D_CONNECTION_STATE_EVT:
     case ESP_A2D_AUDIO_STATE_EVT:
-    case ESP_A2D_AUDIO_CFG_EVT:
     case ESP_A2D_MEDIA_CTRL_ACK_EVT:
         a2dp_core_dispatch(
-        	bt_av_hdl_a2d_evt,
+        	a2dp_cb_handle_a2dp_event,
 			event,
 			param,
 			sizeof(esp_a2d_cb_param_t));
@@ -63,151 +63,105 @@ static void a2dp_cb_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
 
 static int32_t a2dp_cb_data_cb(uint8_t *data, int32_t len)
 {
-	static int32_t sum_len = 0;
-	static uint16_t counter = 0;
+	static uint32_t sum_len = 0;
 
 	if (len <= 0 || data == NULL)
 		return 0;
 
-	for (int i = 0; i < len / 2; i++)
-	{
-		data[2 * i + 0] = counter & 0xFF;
-		data[2 * i + 1] = (counter >> 8) & 0xFF;
-		counter++;
-	}
+	memset(data, rand(), len);
 
 	sum_len += len;
 
-    if (++m_pkt_cnt % 100 == 0)
-        ESP_LOGI(A2DP_CB_TAG, "SENT PACKETS %u (%dB)", m_pkt_cnt, sum_len);
+    if (++m_pkt_cnt % 256 == 0)
+        ESP_LOGI(A2DP_CB_TAG, "SENT PACKETS 0x%08x (0x%08x B)", m_pkt_cnt, sum_len);
 
     return len;
 }
 
-void bt_app_alloc_meta_buffer(esp_avrc_ct_cb_param_t *param)
+static void a2dp_cb_handle_a2dp_event(uint16_t event, void *param)
 {
-    esp_avrc_ct_cb_param_t *rc = (esp_avrc_ct_cb_param_t *)(param);
-    uint8_t *attr_text = (uint8_t *) malloc (rc->meta_rsp.attr_length + 1);
-    memcpy(attr_text, rc->meta_rsp.attr_text, rc->meta_rsp.attr_length);
-    attr_text[rc->meta_rsp.attr_length] = 0;
+    ESP_LOGD(
+    	A2DP_CB_TAG,
+		"%s evt %d",
+		__func__,
+		event);
 
-    rc->meta_rsp.attr_text = attr_text;
-}
+    esp_a2d_cb_param_t *a2d = (esp_a2d_cb_param_t *)param;
 
-void bt_app_rc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param)
-{
-    switch (event) {
-    case ESP_AVRC_CT_METADATA_RSP_EVT:
-        bt_app_alloc_meta_buffer(param);
-    case ESP_AVRC_CT_CONNECTION_STATE_EVT:
-    case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT:
-    case ESP_AVRC_CT_CHANGE_NOTIFY_EVT:
-    case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
-        a2dp_core_dispatch(bt_av_hdl_avrc_evt, event, param, sizeof(esp_avrc_ct_cb_param_t));
-        break;
-    }
-    default:
-        ESP_LOGE(A2DP_CB_TAG, "Invalid AVRC event: %d", event);
-        break;
-    }
-}
+    switch (event)
+    {
+    case ESP_A2D_CONNECTION_STATE_EVT:
+        ESP_LOGI(
+        	A2DP_CB_TAG,
+			"A2DP connection state: %s",
+             conn_state_str[a2d->conn_stat.state]);
 
-static void bt_av_hdl_a2d_evt(uint16_t event, void *p_param)
-{
-    ESP_LOGD(A2DP_CB_TAG, "%s evt %d", __func__, event);
-    esp_a2d_cb_param_t *a2d = NULL;
-    switch (event) {
-    case ESP_A2D_CONNECTION_STATE_EVT: {
-        a2d = (esp_a2d_cb_param_t *)(p_param);
-        uint8_t *bda = a2d->conn_stat.remote_bda;
-        ESP_LOGI(A2DP_CB_TAG, "A2DP connection state: %s, [%02x:%02x:%02x:%02x:%02x:%02x]",
-             m_a2d_conn_state_str[a2d->conn_stat.state], bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
         if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED)
+        {
+        	ESP_LOGI(A2DP_CB_TAG, "Connected, starting media");
+        	memcpy(peer_bda, a2d->conn_stat.remote_bda, sizeof(esp_bd_addr_t));
         	esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
-        break;
-    }
-    case ESP_A2D_AUDIO_STATE_EVT: {
-        a2d = (esp_a2d_cb_param_t *)(p_param);
-        ESP_LOGI(A2DP_CB_TAG, "A2DP audio state: %s", m_a2d_audio_state_str[a2d->audio_stat.state]);
-        m_audio_state = a2d->audio_stat.state;
-        if (ESP_A2D_AUDIO_STATE_STARTED == a2d->audio_stat.state) {
-            m_pkt_cnt = 0;
+        }
+        else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTING)
+        {
+        	ESP_LOGI(A2DP_CB_TAG, "Disconnecting, stopping media");
+        	memset(peer_bda, 0, sizeof(esp_bd_addr_t));
+        	esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_STOP);
         }
         break;
-    }
+
+    case ESP_A2D_AUDIO_STATE_EVT:
+        ESP_LOGI(
+        	A2DP_CB_TAG,
+			"A2DP audio state: %s",
+			audio_state_str[a2d->audio_stat.state]);
+
+        if (a2d->audio_stat.state == ESP_A2D_AUDIO_STATE_STARTED)
+            m_pkt_cnt = 0;
+        break;
 
     case ESP_A2D_MEDIA_CTRL_ACK_EVT:
+    {
     	ESP_LOGI(A2DP_CB_TAG, "A2DP media event ack");
-    	break;
+    	const bool is_cmd_start = a2d->media_ctrl_stat.cmd == ESP_A2D_MEDIA_CTRL_START;
+    	const bool is_cmd_stop = a2d->media_ctrl_stat.cmd == ESP_A2D_MEDIA_CTRL_STOP;
+    	const bool is_status_success = a2d->media_ctrl_stat.status == ESP_A2D_MEDIA_CTRL_ACK_SUCCESS;
 
-    case ESP_A2D_AUDIO_CFG_EVT:
-    	ESP_LOGI(A2DP_CB_TAG, "audio cfg event");
+    	if (is_cmd_start && is_status_success)
+    	{
+    		ESP_LOGI(A2DP_CB_TAG, "Media start successful");
+    	}
+    	else if (is_cmd_stop && is_status_success)
+    	{
+    		ESP_LOGI(A2DP_CB_TAG, "Media stop successful");
+    	}
+    	else
+    	{
+    		ESP_LOGE(
+    			A2DP_CB_TAG,
+				"Media command %d unsuccessful",
+				a2d->media_ctrl_stat.cmd);
+    	}
     	break;
+    }
 
     default:
-        ESP_LOGE(A2DP_CB_TAG, "%s unhandled evt %d", __func__, event);
+        ESP_LOGW(
+        	A2DP_CB_TAG,
+			"%s unhandled evt %d",
+			__func__,
+			event);
         break;
     }
 }
 
-static void bt_av_new_track()
+void a2dp_cb_handle_stack_event(uint16_t event, void *p_param)
 {
-    //Register notifications and request metadata
-    esp_avrc_ct_send_metadata_cmd(0, ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST | ESP_AVRC_MD_ATTR_ALBUM | ESP_AVRC_MD_ATTR_GENRE);
-    esp_avrc_ct_send_register_notification_cmd(1, ESP_AVRC_RN_TRACK_CHANGE, 0);
-}
-
-void bt_av_notify_evt_handler(uint8_t event_id, uint32_t event_parameter)
-{
-    switch (event_id) {
-    case ESP_AVRC_RN_TRACK_CHANGE:
-        bt_av_new_track();
-        break;
-    }
-}
-
-static void bt_av_hdl_avrc_evt(uint16_t event, void *p_param)
-{
-    ESP_LOGD(A2DP_CB_TAG, "%s evt %d", __func__, event);
-    esp_avrc_ct_cb_param_t *rc = (esp_avrc_ct_cb_param_t *)(p_param);
-    switch (event) {
-    case ESP_AVRC_CT_CONNECTION_STATE_EVT: {
-        uint8_t *bda = rc->conn_stat.remote_bda;
-        ESP_LOGI(A2DP_CB_TAG, "AVRC conn_state evt: state %d, [%02x:%02x:%02x:%02x:%02x:%02x]",
-                 rc->conn_stat.connected, bda[0], bda[1], bda[2], bda[3], bda[4], bda[5]);
-
-        if (rc->conn_stat.connected) {
-            bt_av_new_track();
-        }
-        break;
-    }
-    case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT: {
-        ESP_LOGI(A2DP_CB_TAG, "AVRC passthrough rsp: key_code 0x%x, key_state %d", rc->psth_rsp.key_code, rc->psth_rsp.key_state);
-        break;
-    }
-    case ESP_AVRC_CT_METADATA_RSP_EVT: {
-        ESP_LOGI(A2DP_CB_TAG, "AVRC metadata rsp: attribute id 0x%x, %s", rc->meta_rsp.attr_id, rc->meta_rsp.attr_text);
-        free(rc->meta_rsp.attr_text);
-        break;
-    }
-    case ESP_AVRC_CT_CHANGE_NOTIFY_EVT: {
-        ESP_LOGI(A2DP_CB_TAG, "AVRC event notification: %d, param: %d", rc->change_ntf.event_id, rc->change_ntf.event_parameter);
-        bt_av_notify_evt_handler(rc->change_ntf.event_id, rc->change_ntf.event_parameter);
-        break;
-    }
-    case ESP_AVRC_CT_REMOTE_FEATURES_EVT: {
-        ESP_LOGI(A2DP_CB_TAG, "AVRC remote features %x", rc->rmt_feats.feat_mask);
-        break;
-    }
-    default:
-        ESP_LOGE(A2DP_CB_TAG, "%s unhandled evt %d", __func__, event);
-        break;
-    }
-}
-
-void a2d_cb_handle_stack_event(uint16_t event, void *p_param)
-{
-    ESP_LOGD(A2DP_CB_TAG, "%s evt %d", __func__, event);
+    ESP_LOGD(
+    	A2DP_CB_TAG,
+		"%s evt %d",
+		__func__,
+		event);
 
     esp_err_t ret;
 

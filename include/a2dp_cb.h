@@ -32,7 +32,7 @@ typedef enum
 } a2dp_cb_event_t;
 
 /// handler for bluetooth stack enabled events
-void a2d_cb_handle_stack_event(uint16_t event, void *p_param);
+void a2dp_cb_handle_stack_event(uint16_t event, void *p_param);
 
 
 #endif
