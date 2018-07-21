@@ -17,8 +17,9 @@
 // My includes
 #include "a2dp_core.h"
 #include "a2dp_cb.h"
-#include "tags.h"
 
+
+static const char* const A2DP_CB_TAG = "A2DP_CB";
 
 static void a2dp_cb_handle_a2dp_event(uint16_t event, void *param);
 

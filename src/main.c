@@ -24,11 +24,11 @@
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
 // My includes
-#include "tags.h"
 #include "gatts.h"
 #include "a2dp_core.h"
 #include "a2dp_cb.h"
 
+static const char *const SERVER_TAG = "SERVER";
 
 void conjure_rms(void *_)
 {

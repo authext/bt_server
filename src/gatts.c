@@ -1,6 +1,7 @@
 #include "gatts.h"
 #include <stdlib.h>
-#include "tags.h"
+
+static const char *const GATTS_TAG = "GATT_SERVER";
 
 typedef enum _gatt_index
 {
