@@ -38,7 +38,7 @@ void conjure_rms(void *_)
 	{
 		const TickType_t start_ticks = xTaskGetTickCount();
 
-		if (counter % 300 == 0)
+		if (counter % 1500 == 0)
 		{
 			rms_value = rand() % 10 + 1;
 			printf("I have rms of %d\n", rms_value);

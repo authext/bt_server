@@ -104,9 +104,8 @@ static void a2dp_cb_handle_a2dp_event(uint16_t event, void *param)
         }
         else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTING)
         {
-        	ESP_LOGI(A2DP_CB_TAG, "Disconnecting, stopping media");
+        	ESP_LOGI(A2DP_CB_TAG, "Disconnecting");
         	memset(peer_bda, 0, sizeof(esp_bd_addr_t));
-        	esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_STOP);
         }
         break;
 
