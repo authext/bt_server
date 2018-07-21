@@ -46,7 +46,7 @@ void conjure_rms(void *_)
 			if (rms_value > 2 && ble_connected)
 			{
 				esp_err_t ret = esp_ble_gatts_send_indicate(
-					profile_tab[PROFILE_APP_IDX].gatts_if,
+					profile.gatts_if,
 					conn_id,
 					0x2a,
 					sizeof(uint8_t),
