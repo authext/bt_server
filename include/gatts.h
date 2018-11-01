@@ -26,11 +26,10 @@
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
 
-#define PROFILE_NUM                 1
-#define PROFILE_APP_IDX             0
 #define ESP_APP_ID                  0x55
-#define SAMPLE_DEVICE_NAME          "GATT_SERVER"
 #define SVC_INST_ID                 0
+
+static const char * const DEVICE_NAME = "SERVER";
 
 #define ADV_CONFIG_FLAG             (1 << 0)
 #define SCAN_RSP_CONFIG_FLAG        (1 << 1)
@@ -51,7 +50,7 @@ typedef struct
     esp_bt_uuid_t descr_uuid;
 } gatts_profile_inst;
 
-extern gatts_profile_inst profile_tab[PROFILE_NUM];
+extern gatts_profile_inst profile;
 
 extern bool ble_connected;
 extern uint8_t rms_value;

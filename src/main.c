@@ -24,11 +24,11 @@
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
 // My includes
-#include "tags.h"
 #include "gatts.h"
 #include "a2dp_core.h"
 #include "a2dp_cb.h"
 
+static const char *const SERVER_TAG = "SERVER";
 
 void conjure_rms(void *_)
 {
@@ -38,7 +38,7 @@ void conjure_rms(void *_)
 	{
 		const TickType_t start_ticks = xTaskGetTickCount();
 
-		if (counter % 300 == 0)
+		if (counter % 1500 == 0)
 		{
 			rms_value = rand() % 10 + 1;
 			printf("I have rms of %d\n", rms_value);
@@ -46,7 +46,7 @@ void conjure_rms(void *_)
 			if (rms_value > 2 && ble_connected)
 			{
 				esp_err_t ret = esp_ble_gatts_send_indicate(
-					profile_tab[PROFILE_APP_IDX].gatts_if,
+					profile.gatts_if,
 					conn_id,
 					0x2a,
 					sizeof(uint8_t),

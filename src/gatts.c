@@ -1,6 +1,7 @@
 #include "gatts.h"
 #include <stdlib.h>
-#include "tags.h"
+
+static const char *const GATTS_TAG = "GATT_SERVER";
 
 typedef enum _gatt_index
 {
@@ -38,13 +39,10 @@ struct gatts_profile_inst
 static uint8_t adv_config_done = 0;
 
 /* One gatt-based profile one app_id and one gatts_if, this array will store the gatts_if returned by ESP_GATTS_REG_EVT */
-gatts_profile_inst profile_tab[PROFILE_NUM] =
+gatts_profile_inst profile =
 {
-    [PROFILE_APP_IDX] =
-    {
-        .gatts_cb = gatts_profile_event_handler,
-        .gatts_if = ESP_GATT_IF_NONE,       /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
-    },
+    .gatts_cb = gatts_profile_event_handler,
+    .gatts_if = ESP_GATT_IF_NONE,       /* Not get the gatt_if, so initial is ESP_GATT_IF_NONE */
 };
 
 static uint8_t service_uuid[16] =
@@ -239,7 +237,7 @@ void gatts_profile_event_handler(
     switch (event)
     {
     case ESP_GATTS_REG_EVT:
-		if ((ret = esp_ble_gap_set_device_name(SAMPLE_DEVICE_NAME)) != ESP_OK)
+		if ((ret = esp_ble_gap_set_device_name(DEVICE_NAME)) != ESP_OK)
 			ESP_LOGE(GATTS_TAG, "set device name failed, error code = %x", ret);
 
 		//config adv data
@@ -354,7 +352,7 @@ void gatts_event_handler(
     {
     	if (param->reg.status == ESP_GATT_OK)
     	{
-            profile_tab[PROFILE_APP_IDX].gatts_if = gatts_if;
+            profile.gatts_if = gatts_if;
     	}
     	else
 		{
@@ -367,13 +365,10 @@ void gatts_event_handler(
 		}
     }
 
-	for (int idx = 0; idx < PROFILE_NUM; idx++)
-	{
 		/* ESP_GATT_IF_NONE, not specify a certain gatt_if, need to call every profile cb function */
-		const bool is_none = gatts_if == ESP_GATT_IF_NONE;
-		const bool is_this = gatts_if == profile_tab[idx].gatts_if;
+	const bool is_none = gatts_if == ESP_GATT_IF_NONE;
+	const bool is_this = gatts_if == profile.gatts_if;
 
-		if ((is_none || is_this) && profile_tab[idx].gatts_cb)
-			profile_tab[idx].gatts_cb(event, gatts_if, param);
-	}
+	if ((is_none || is_this) && profile.gatts_cb)
+		profile.gatts_cb(event, gatts_if, param);
 }
