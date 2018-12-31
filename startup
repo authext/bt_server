@@ -1,9 +1,9 @@
 #!/bin/bash
 
 python\
-	../esp-idf/components/esptool_py/esptool/esptool.py\
+	"$IDF_PATH/components/esptool_py/esptool/esptool.py"\
 	--chip esp32\
-	--port $1\
+	--port "$1"\
 	--baud 115200\
 	--before default_reset\
 	--after hard_reset write_flash\
@@ -15,11 +15,10 @@ python\
 	0x10000 build/server.bin\
 	0x8000 build/partitions_singleapp.bin
 
-winpty\
-	python\
-	../esp-idf/tools/idf_monitor.py\
+python\
+	"$IDF_PATH/tools/idf_monitor.py"\
 	--baud 115200\
-	--port $1\
+	--port "$1"\
 	--toolchain-prefix "xtensa-esp32-elf-"\
 	--make "make"\
 	--print_filter ""\
