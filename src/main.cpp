@@ -24,9 +24,9 @@
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
 // My includes
-#include "gatts.h"
-#include "a2dp_core.h"
-#include "a2dp_cb.h"
+#include "gatts.hpp"
+#include "a2dp_core.hpp"
+#include "a2dp_cb.hpp"
 
 static const char *const SERVER_TAG = "SERVER";
 
@@ -67,7 +67,7 @@ void conjure_rms(void *_)
 }
 
 
-void app_main()
+extern "C" void app_main()
 {
     esp_err_t ret;
 
