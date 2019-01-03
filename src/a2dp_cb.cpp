@@ -10,7 +10,6 @@
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
 #include "esp_a2dp_api.h"
-#include "esp_avrc_api.h"
 // My includes
 #include "a2dp_core.hpp"
 
@@ -18,8 +17,8 @@ namespace
 {
     constexpr auto TAG = "A2DP_CB";
 
-    std::uint32_t m_pkt_cnt = 0;
-    esp_bd_addr_t peer_bda = {};
+    std::uint32_t sum_len = 0;
+    std::uint32_t packet_count = 0;
 
     const char * const conn_state_str[] =
     {
@@ -57,13 +56,11 @@ namespace
             if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED)
             {
                 ESP_LOGI(TAG, "Connected, starting media");
-                std::memcpy(peer_bda, a2d->conn_stat.remote_bda, sizeof(esp_bd_addr_t));
                 esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
             }
             else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTING)
             {
                 ESP_LOGI(TAG, "Disconnecting");
-                std::memset(peer_bda, 0, sizeof(esp_bd_addr_t));
             }
             break;
 
@@ -74,7 +71,10 @@ namespace
                 audio_state_str[a2d->audio_stat.state]);
 
             if (a2d->audio_stat.state == ESP_A2D_AUDIO_STATE_STARTED)
-                m_pkt_cnt = 0;
+            {
+                sum_len = 0;
+                packet_count = 0;
+            }
             break;
 
         case ESP_A2D_MEDIA_CTRL_ACK_EVT:
@@ -134,17 +134,15 @@ namespace
 
     std::int32_t data_callback(std::uint8_t *data, std::int32_t len)
     {
-    	static std::uint32_t sum_len = 0;
-
-    	if (len <= 0 || data == NULL)
+    	if (len <= 0 || data == nullptr)
     		return 0;
 
     	std::memset(data, rand(), len);
 
     	sum_len += len;
 
-        if (++m_pkt_cnt % 256 == 0)
-            ESP_LOGI(TAG, "SENT PACKETS 0x%08x (0x%08x B)", m_pkt_cnt, sum_len);
+        if (++packet_count % 256 == 0)
+            ESP_LOGI(TAG, "SENT PACKETS 0x%08x (0x%08x B)", packet_count, sum_len);
 
         return len;
     }
