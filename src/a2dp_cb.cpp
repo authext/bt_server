@@ -49,7 +49,7 @@ static void a2dp_cb_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
     case ESP_A2D_CONNECTION_STATE_EVT:
     case ESP_A2D_AUDIO_STATE_EVT:
     case ESP_A2D_MEDIA_CTRL_ACK_EVT:
-        a2dp_core_dispatch(
+        a2dp_core::dispatch(
         	a2dp_cb_handle_a2dp_event,
 			event,
 			param,
@@ -155,19 +155,12 @@ static void a2dp_cb_handle_a2dp_event(uint16_t event, void *param)
     }
 }
 
-void a2dp_cb_handle_stack_event(uint16_t event, void *p_param)
+namespace a2dp_cb
 {
-    ESP_LOGD(
-    	A2DP_CB_TAG,
-		"%s evt %d",
-		__func__,
-		event);
-
-    esp_err_t ret;
-
-    switch (event)
+    void init_stack(std::uint16_t, void *)
     {
-    case A2D_CB_EVENT_STACK_UP:
+        esp_err_t ret;
+
     	ESP_LOGI(A2DP_CB_TAG, "Setting up A2DP");
     	esp_bt_dev_set_device_name("SERVER");
         /* initialize A2DP sink */
@@ -194,10 +187,5 @@ void a2dp_cb_handle_stack_event(uint16_t event, void *p_param)
         	ESP_LOGE(A2DP_CB_TAG, "Cannot set scan mode %d", ret);
         	return;
         }
-        break;
-
-    default:
-        ESP_LOGE(A2DP_CB_TAG, "%s unhandled evt %d", __func__, event);
-        break;
     }
 }

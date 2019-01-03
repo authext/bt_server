@@ -121,11 +121,11 @@ extern "C" void app_main()
         return;
     }
 
-    a2dp_core_start();
-    a2dp_core_dispatch(
-    	a2dp_cb_handle_stack_event,
-		A2D_CB_EVENT_STACK_UP,
-		NULL,
+    a2dp_core::start();
+    a2dp_core::dispatch(
+    	a2dp_cb::init_stack,
+		0,
+		nullptr,
 		0);
 
     if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
