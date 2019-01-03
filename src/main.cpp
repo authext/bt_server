@@ -40,17 +40,17 @@ void conjure_rms(void *_)
 
 		if (counter % 1500 == 0)
 		{
-			rms_value = rand() % 10 + 1;
-			printf("I have rms of %d\n", rms_value);
+			gatts::rms_value = rand() % 10 + 1;
+			printf("I have rms of %d\n", gatts::rms_value);
 
-			if (rms_value > 2 && ble_connected)
+			if (gatts::rms_value > 2 && gatts::ble_connected)
 			{
 				esp_err_t ret = esp_ble_gatts_send_indicate(
-					profile.gatts_if,
-					conn_id,
+					gatts::profile.gatts_if,
+					gatts::conn_id,
 					0x2a,
 					sizeof(uint8_t),
-					&rms_value,
+					&gatts::rms_value,
 					false);
 				if (ret != ESP_OK)
 					ESP_LOGE(SERVER_TAG, "Cannot notify");
@@ -128,7 +128,7 @@ extern "C" void app_main()
 		nullptr,
 		0);
 
-    if ((ret = esp_ble_gatts_register_callback(gatts_event_handler)) != ESP_OK)
+    if ((ret = esp_ble_gatts_register_callback(gatts::gatts_event_handler)) != ESP_OK)
     {
         ESP_LOGE(
         	SERVER_TAG,
@@ -137,7 +137,7 @@ extern "C" void app_main()
         return;
     }
 
-    if ((ret = esp_ble_gap_register_callback(gap_event_handler)) != ESP_OK)
+    if ((ret = esp_ble_gap_register_callback(gatts::gap_event_handler)) != ESP_OK)
     {
         ESP_LOGE(
         	SERVER_TAG,
@@ -146,7 +146,7 @@ extern "C" void app_main()
         return;
     }
 
-    if ((ret = esp_ble_gatts_app_register(ESP_APP_ID)) != ESP_OK)
+    if ((ret = esp_ble_gatts_app_register(gatts::ESP_APP_ID)) != ESP_OK)
     {
         ESP_LOGE(
         	SERVER_TAG,
