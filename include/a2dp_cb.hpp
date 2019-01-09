@@ -6,7 +6,7 @@
 
 namespace a2dp_cb
 {
-	void init_stack(std::uint16_t, void *);
+	void init_stack();
 }
 
 #endif

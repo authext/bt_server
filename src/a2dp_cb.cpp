@@ -10,8 +10,6 @@
 #include "esp_bt_device.h"
 #include "esp_gap_bt_api.h"
 #include "esp_a2dp_api.h"
-// My includes
-#include "a2dp_core.hpp"
 
 namespace
 {
@@ -35,15 +33,13 @@ namespace
     	[ESP_A2D_AUDIO_STATE_STARTED] = "Started"
     };
 
-    void handle_a2dp_event(std::uint16_t event, void *param)
+    void callback(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *a2d)
     {
         ESP_LOGD(
             TAG,
             "%s evt %d",
             __func__,
             event);
-
-        const auto *a2d = (esp_a2d_cb_param_t *)param;
 
         switch (event)
         {
@@ -56,7 +52,7 @@ namespace
             if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED)
             {
                 ESP_LOGI(TAG, "Connected, starting media");
-                esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
+                //esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
             }
             else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTING)
             {
@@ -112,26 +108,6 @@ namespace
         }
     }
 
-    void callback(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
-    {
-        switch (event)
-        {
-        case ESP_A2D_CONNECTION_STATE_EVT:
-        case ESP_A2D_AUDIO_STATE_EVT:
-        case ESP_A2D_MEDIA_CTRL_ACK_EVT:
-            a2dp_core::dispatch(
-            	handle_a2dp_event,
-    			event,
-    			param,
-    			sizeof(esp_a2d_cb_param_t));
-            break;
-
-        default:
-            ESP_LOGE(TAG, "Invalid A2DP event: %d", event);
-            break;
-        }
-    }
-
     std::int32_t data_callback(std::uint8_t *data, std::int32_t len)
     {
     	if (len <= 0 || data == nullptr)
@@ -150,7 +126,7 @@ namespace
 
 namespace a2dp_cb
 {
-    void init_stack(std::uint16_t, void *)
+    void init_stack()
     {
     	ESP_LOGI(TAG, "Setting up A2DP");
 
