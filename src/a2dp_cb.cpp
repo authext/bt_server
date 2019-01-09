@@ -51,12 +51,8 @@ namespace
 
             if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED)
             {
-                ESP_LOGI(TAG, "Connected, starting media");
-                //esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
-            }
-            else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTING)
-            {
-                ESP_LOGI(TAG, "Disconnecting");
+                ESP_LOGI(TAG, "Starting media");
+                esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START);
             }
             break;
 
