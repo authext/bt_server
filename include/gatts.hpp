@@ -23,11 +23,22 @@ namespace gatts
 {
     constexpr auto ESP_APP_ID = 0x55;
 
+    enum gatt_index
+    {
+        IDX_SERVICE,
+        IDX_CHAR_RMS,
+        IDX_CHAR_VAL_RMS,
+        IDX_CHAR_CFG_RMS,
+
+        HRS_IDX_NB,
+    };
+
     extern std::uint16_t interface;
 
     extern bool ble_connected;
     extern std::uint8_t rms_value;
     extern std::uint16_t conn_id;
+    extern std::uint16_t handle_table[HRS_IDX_NB];
 
     void gap_event_handler(
     	esp_gap_ble_cb_event_t event,

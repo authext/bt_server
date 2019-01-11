@@ -12,17 +12,6 @@ namespace
 	constexpr auto SCAN_RSP_CONFIG_FLAG = 1 << 1;
 	constexpr auto SVC_INST_ID = 0;
 
-	enum gatt_index
-	{
-	    IDX_SERVICE,
-	    IDX_CHAR_RMS,
-	    IDX_CHAR_VAL_RMS,
-	    IDX_CHAR_CFG_RMS,
-
-	    HRS_IDX_NB,
-	};
-
-	std::uint16_t handle_table[HRS_IDX_NB];
 	std::uint8_t adv_config_done = 0;
 	std::uint8_t service_uuid[16] =
 	{
@@ -45,7 +34,7 @@ namespace
 	const esp_gatts_attr_db_t gatt_db[] =
 	{
 	    // Service Declaration
-	    [IDX_SERVICE] =
+	    [gatts::IDX_SERVICE] =
 	    {
 	    	{
 	    		ESP_GATT_AUTO_RSP
@@ -61,7 +50,7 @@ namespace
 	    },
 
 	    /* Characteristic Declaration */
-	    [IDX_CHAR_RMS] =
+	    [gatts::IDX_CHAR_RMS] =
 	    {
 	    	{
 	    		ESP_GATT_AUTO_RSP
@@ -77,7 +66,7 @@ namespace
 	    },
 
 	    /* Characteristic Value */
-	    [IDX_CHAR_VAL_RMS] =
+	    [gatts::IDX_CHAR_VAL_RMS] =
 	    {
 	    	{
 	    		ESP_GATT_AUTO_RSP
@@ -93,7 +82,7 @@ namespace
 	    },
 
 	    /* Client Characteristic Configuration Descriptor */
-	    [IDX_CHAR_CFG_RMS]  =
+	    [gatts::IDX_CHAR_CFG_RMS]  =
 	    {
 	    	{
 	    		ESP_GATT_AUTO_RSP
@@ -156,123 +145,6 @@ namespace
 	    .channel_map         = ADV_CHNL_ALL,
 	    .adv_filter_policy   = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 	};
-
-
-	void profile_event_handler(
-		esp_gatts_cb_event_t event,
-		esp_gatt_if_t gatts_if,
-		esp_ble_gatts_cb_param_t *param)
-	{
-		esp_err_t ret;
-
-	    switch (event)
-	    {
-	    case ESP_GATTS_REG_EVT:
-			if ((ret = esp_ble_gap_set_device_name(DEVICE_NAME)) != ESP_OK)
-				ESP_LOGE(TAG, "set device name failed, error code = %x", ret);
-
-			//config adv data
-			if ((ret = esp_ble_gap_config_adv_data(&adv_data)) != ESP_OK)
-				ESP_LOGE(TAG, "config adv data failed, error code = %x", ret);
-			adv_config_done |= ADV_CONFIG_FLAG;
-
-			//config scan response data
-			if ((ret = esp_ble_gap_config_adv_data(&scan_rsp_data)) != ESP_OK)
-				ESP_LOGE(TAG, "config scan response data failed, error code = %x", ret);
-			adv_config_done |= SCAN_RSP_CONFIG_FLAG;
-
-			if ((ret = esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, HRS_IDX_NB, SVC_INST_ID)) != ESP_OK)
-				ESP_LOGE(TAG, "create attr table failed, error code = %x", ret);
-			break;
-
-		case ESP_GATTS_READ_EVT:
-			ESP_LOGI(TAG, "ESP_GATTS_READ_EVT");
-			break;
-
-		case ESP_GATTS_MTU_EVT:
-			ESP_LOGI(TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
-			gatts::ble_connected = true;
-			break;
-
-		case ESP_GATTS_CONF_EVT:
-			ESP_LOGI(TAG, "ESP_GATTS_CONF_EVT, status = %d", param->conf.status);
-			break;
-
-		case ESP_GATTS_START_EVT:
-			ESP_LOGI(TAG, "SERVICE_START_EVT, status %d, service_handle %d", param->start.status, param->start.service_handle);
-			break;
-
-		case ESP_GATTS_CONNECT_EVT:
-		{
-			gatts::conn_id = param->connect.conn_id;
-			ESP_LOGI(
-				TAG,
-				"ESP_GATTS_CONNECT_EVT, conn_id = %d",
-				param->connect.conn_id);
-			esp_log_buffer_hex(
-				TAG,
-				param->connect.remote_bda,
-				6);
-			esp_ble_conn_update_params_t conn_params = {};
-			std::memcpy(
-				conn_params.bda,
-				param->connect.remote_bda,
-				sizeof(esp_bd_addr_t));
-			conn_params.latency = 0;
-			conn_params.max_int = 0x20;    // 1.25ms
-			conn_params.min_int = 0x40;    // 1.25ms
-			conn_params.timeout = 10;    // 10ms
-			//start sent the update connection parameters to the peer device.
-			esp_ble_gap_update_conn_params(&conn_params);
-			esp_ble_gap_stop_advertising();
-		}
-		break;
-
-		case ESP_GATTS_DISCONNECT_EVT:
-			gatts::ble_connected = false;
-			ESP_LOGI(
-				TAG,
-				"ESP_GATTS_DISCONNECT_EVT, reason = %d",
-				param->disconnect.reason);
-			esp_ble_gap_start_advertising(&adv_params);
-			break;
-
-		case ESP_GATTS_CREAT_ATTR_TAB_EVT:
-		{
-			if (param->add_attr_tab.status != ESP_GATT_OK)
-			{
-				ESP_LOGE(
-					TAG,
-					"create attribute table failed, error code=0x%x",
-					param->add_attr_tab.status);
-			}
-			else if (param->add_attr_tab.num_handle != HRS_IDX_NB)
-			{
-				ESP_LOGE(
-					TAG,
-					"create attribute table abnormally, num_handle (%d) doesn't equal to HRS_IDX_NB(%d)",
-					param->add_attr_tab.num_handle,
-					HRS_IDX_NB);
-			}
-			else
-			{
-				ESP_LOGI(
-					TAG,
-					"create attribute table successfully, the number handle = %d\n",
-					param->add_attr_tab.num_handle);
-				std::memcpy(
-					handle_table,
-					param->add_attr_tab.handles,
-					sizeof(handle_table));
-				esp_ble_gatts_start_service(handle_table[IDX_SERVICE]);
-			}
-		}
-		break;
-
-		default:
-			break;
-	    }
-	}
 }
 
 namespace gatts
@@ -281,6 +153,7 @@ namespace gatts
 	std::uint8_t rms_value = 0;
 	std::uint16_t conn_id = 0;
 	std::uint16_t interface = ESP_GATT_IF_NONE;
+	std::uint16_t handle_table[gatts::HRS_IDX_NB];
 
 	void gap_event_handler(
 		esp_gap_ble_cb_event_t event,
@@ -359,7 +232,98 @@ namespace gatts
 		const auto is_none = gatts_if == ESP_GATT_IF_NONE;
 		const auto is_this = gatts_if == interface;
 
-		if (is_none || is_this)
-			profile_event_handler(event, gatts_if, param);
+		if (!is_none && !is_this)
+			return;
+
+		switch (event)
+	    {
+	    case ESP_GATTS_REG_EVT:
+			ESP_ERROR_CHECK(esp_ble_gap_set_device_name(DEVICE_NAME));
+			ESP_ERROR_CHECK(esp_ble_gap_config_adv_data(&adv_data));
+			adv_config_done |= ADV_CONFIG_FLAG;
+			ESP_ERROR_CHECK(esp_ble_gap_config_adv_data(&scan_rsp_data));
+			adv_config_done |= SCAN_RSP_CONFIG_FLAG;
+			ESP_ERROR_CHECK(
+				esp_ble_gatts_create_attr_tab(
+					gatt_db, 
+					gatts_if, 
+					HRS_IDX_NB, 
+					SVC_INST_ID));
+			break;
+
+		case ESP_GATTS_MTU_EVT:
+			ESP_LOGI(TAG, "ESP_GATTS_MTU_EVT, MTU %d", param->mtu.mtu);
+			gatts::ble_connected = true;
+			break;
+
+		case ESP_GATTS_CONNECT_EVT:
+		{
+			gatts::conn_id = param->connect.conn_id;
+			ESP_LOGI(
+				TAG,
+				"ESP_GATTS_CONNECT_EVT, conn_id = %d",
+				param->connect.conn_id);
+			esp_log_buffer_hex(
+				TAG,
+				param->connect.remote_bda,
+				6);
+			esp_ble_conn_update_params_t conn_params = {};
+			std::memcpy(
+				conn_params.bda,
+				param->connect.remote_bda,
+				sizeof(esp_bd_addr_t));
+			conn_params.latency = 0;
+			conn_params.max_int = 0x20;    // 1.25ms
+			conn_params.min_int = 0x40;    // 1.25ms
+			conn_params.timeout = 10;    // 10ms
+			//start sent the update connection parameters to the peer device.
+			esp_ble_gap_update_conn_params(&conn_params);
+			esp_ble_gap_stop_advertising();
+		}
+		break;
+
+		case ESP_GATTS_DISCONNECT_EVT:
+			gatts::ble_connected = false;
+			ESP_LOGI(
+				TAG,
+				"ESP_GATTS_DISCONNECT_EVT, reason = %d",
+				param->disconnect.reason);
+			break;
+
+		case ESP_GATTS_CREAT_ATTR_TAB_EVT:
+		{
+			if (param->add_attr_tab.status != ESP_GATT_OK)
+			{
+				ESP_LOGE(
+					TAG,
+					"create attribute table failed, error code=0x%x",
+					param->add_attr_tab.status);
+			}
+			else if (param->add_attr_tab.num_handle != HRS_IDX_NB)
+			{
+				ESP_LOGE(
+					TAG,
+					"create attribute table abnormally, num_handle (%d) doesn't equal to HRS_IDX_NB(%d)",
+					param->add_attr_tab.num_handle,
+					HRS_IDX_NB);
+			}
+			else
+			{
+				ESP_LOGI(
+					TAG,
+					"create attribute table successfully, the number handle = %d\n",
+					param->add_attr_tab.num_handle);
+				std::memcpy(
+					handle_table,
+					param->add_attr_tab.handles,
+					sizeof(handle_table));
+				ESP_ERROR_CHECK(esp_ble_gatts_start_service(handle_table[IDX_SERVICE]));
+			}
+		}
+		break;
+
+		default:
+			break;
+	    }
 	}
 }

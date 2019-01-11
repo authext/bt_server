@@ -50,7 +50,7 @@ void conjure_rms()
 				const auto ret = esp_ble_gatts_send_indicate(
 					gatts::interface,
 					gatts::conn_id,
-					0x2a,
+					gatts::handle_table[gatts::IDX_CHAR_VAL_RMS],
 					sizeof(std::uint8_t),
 					&gatts::rms_value,
 					false);
