@@ -99,7 +99,7 @@ void bluetooth_server::conjure_rms()
 		const auto start = std::chrono::steady_clock::now();
 
 		activator_value = rand() % 10 + 1;
-		printf("I have rms of %d\n", activator_value);
+		printf("I have activator of %d\n", activator_value);
 
 		if (activator_value > 2 && m_ble_connected)
 		{
