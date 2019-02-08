@@ -1,6 +1,8 @@
 #ifndef BLUETOOTH_SERVER_HPP
 #define BLUETOOTH_SERVER_HPP
 
+// C++ includes
+#include <random>
 // C includes
 #include <cstdint>
 // ESP includes
@@ -48,7 +50,10 @@ private:
 	std::uint16_t m_interface;
 	std::uint16_t m_conn_id;
 	bool m_ble_connected;
+	bool m_a2dp_connected;
 	std::uint16_t m_handle_table[HRS_IDX_NB];
+	std::minstd_rand m_rand;
+	std::uniform_int_distribution<int> m_dist;
 
 	/* Methods */
 	void a2dp_callback(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *a2d);

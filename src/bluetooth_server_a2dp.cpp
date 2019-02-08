@@ -44,8 +44,14 @@ void bluetooth_server::a2dp_callback(esp_a2d_cb_event_t event, esp_a2d_cb_param_
 
         if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_CONNECTED)
         {
+            m_a2dp_connected = true;
+
             ESP_LOGI(TAG, "Starting media");
             ESP_ERROR_CHECK(esp_a2d_media_ctrl(ESP_A2D_MEDIA_CTRL_START));
+        }
+        else if (a2d->conn_stat.state == ESP_A2D_CONNECTION_STATE_DISCONNECTING)
+        {
+            m_a2dp_connected = false;
         }
         break;
 
@@ -99,10 +105,13 @@ void bluetooth_server::a2dp_callback(esp_a2d_cb_event_t event, esp_a2d_cb_param_
 
 std::int32_t bluetooth_server::a2dp_data_callback(std::uint8_t *data, std::int32_t len)
 {
+    static std::minstd_rand rand(321);
+    static std::uniform_int_distribution<std::uint8_t> dist;
+
 	if (len <= 0 || data == nullptr)
 		return 0;
 
-	std::memset(data, rand(), len);
+	std::memset(data, dist(rand), len);
 
 	m_bytes_count += len;
 

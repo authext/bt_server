@@ -3,6 +3,7 @@
 // C++ includes
 #include <chrono>
 #include <thread>
+#include <random>
 // C includes
 #include <cstdint>
 // ESP includes
@@ -26,7 +27,10 @@ bluetooth_server::bluetooth_server()
 	, m_interface(ESP_GATT_IF_NONE)
 	, m_conn_id(0)
 	, m_ble_connected(false)
+	, m_a2dp_connected(false)
 	, m_handle_table()
+	, m_rand(123)
+	, m_dist(0, 10)
 {
 }
 
@@ -98,10 +102,10 @@ void bluetooth_server::conjure_rms()
 	{
 		const auto start = std::chrono::steady_clock::now();
 
-		activator_value = rand() % 10 + 1;
+		activator_value = m_dist(m_rand);
 		printf("I have activator of %d\n", activator_value);
 
-		if (activator_value > 2 && m_ble_connected)
+		if (m_ble_connected && !m_a2dp_connected)
 		{
 			ESP_ERROR_CHECK(esp_ble_gatts_send_indicate(
 				m_interface,

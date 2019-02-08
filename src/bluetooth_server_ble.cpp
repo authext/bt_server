@@ -248,6 +248,7 @@ void bluetooth_server::gatts_callback(
 			TAG,
 			"ESP_GATTS_DISCONNECT_EVT, reason = %d",
 			param->disconnect.reason);
+		ESP_ERROR_CHECK(esp_ble_gap_start_advertising(&adv_params));
 		break;
 
 	case ESP_GATTS_CREAT_ATTR_TAB_EVT:
