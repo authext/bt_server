@@ -223,19 +223,15 @@ void bluetooth_server::gatts_callback(
 			TAG,
 			"ESP_GATTS_CONNECT_EVT, m_conn_id = %d",
 			param->connect.conn_id);
-		esp_log_buffer_hex(
-			TAG,
-			param->connect.remote_bda,
-			6);
 		esp_ble_conn_update_params_t conn_params = {};
 		std::memcpy(
 			conn_params.bda,
 			param->connect.remote_bda,
 			sizeof(esp_bd_addr_t));
 		conn_params.latency = 0;
-		conn_params.max_int = 0x20;    // 1.25ms
-		conn_params.min_int = 0x40;    // 1.25ms
-		conn_params.timeout = 10;    // 10ms
+		conn_params.max_int = 3200;    // * 1.25ms
+		conn_params.min_int = 3200;    // * 1.25ms
+		conn_params.timeout = 400;     // * 10ms
 		//start sent the update connection parameters to the peer device.
 		esp_ble_gap_update_conn_params(&conn_params);
 		esp_ble_gap_stop_advertising();

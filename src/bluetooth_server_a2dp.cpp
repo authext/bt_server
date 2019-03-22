@@ -103,15 +103,28 @@ void bluetooth_server::a2dp_callback(esp_a2d_cb_event_t event, esp_a2d_cb_param_
     }
 }
 
+static constexpr std::int16_t sine_table[] = {
+#include "table.txt"
+};
+static constexpr auto N = sizeof(sine_table)/sizeof(sine_table[0]);
+
+
 std::int32_t bluetooth_server::a2dp_data_callback(std::uint8_t *data, std::int32_t len)
 {
+    static size_t k = 0;
+    static size_t delta = round(N * 440.0/44100.0);
     static std::minstd_rand rand(321);
     static std::uniform_int_distribution<std::uint8_t> dist;
 
 	if (len <= 0 || data == nullptr)
 		return 0;
 
-	std::memset(data, dist(rand), len);
+    for (std::int32_t i = 0; i < len / 2; i++)
+    {
+        auto value = sine_table[(k++ * delta) % N];
+        data[2 * i + 0] = (value >> 0) & 0xFF;
+        data[2 * i + 1] = (value >> 8) & 0xFF;
+    }
 
 	m_bytes_count += len;
 

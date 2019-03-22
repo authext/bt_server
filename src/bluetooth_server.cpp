@@ -98,14 +98,27 @@ void bluetooth_server::start()
 
 void bluetooth_server::conjure_rms()
 {
+	static const std::uint8_t progression[] =
+	{
+		10,
+		10,
+		10,
+		10,
+		10,
+		10,
+		10,
+	};
+	static auto index = 0;
+
 	for (;;)
 	{
 		const auto start = std::chrono::steady_clock::now();
 
-		activator_value = m_dist(m_rand);
+		//activator_value = m_dist(m_rand);
+		activator_value = progression[index++ % sizeof(progression)];
 		printf("I have activator of %d\n", activator_value);
 
-		if (m_ble_connected && !m_a2dp_connected)
+		if (m_ble_connected /*&& !m_a2dp_connected*/)
 		{
 			ESP_ERROR_CHECK(esp_ble_gatts_send_indicate(
 				m_interface,
@@ -118,7 +131,7 @@ void bluetooth_server::conjure_rms()
 
 		const auto end = std::chrono::steady_clock::now();
 		const auto diff = end - start;
-		if (diff < 20s)
-            std::this_thread::sleep_for(20s - diff);
+		if (diff < 4s)
+            std::this_thread::sleep_for(4s - diff);
 	}
 }
